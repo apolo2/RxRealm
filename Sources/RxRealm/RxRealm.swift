@@ -32,9 +32,7 @@ public protocol NotificationEmitter {
 
    - returns: `NotificationToken` - retain this value to keep notifications being emitted for the current collection.
    */
-  func observe(keyPaths: [String]?,
-               on queue: DispatchQueue?,
-               _ block: @escaping (RealmCollectionChange<Self>) -> Void) -> NotificationToken
+  func observe(on queue: DispatchQueue?, _ block: @escaping (RealmCollectionChange<Self>) -> Void) -> NotificationToken
 
   func toArray() -> [ElementType]
 
@@ -42,6 +40,10 @@ public protocol NotificationEmitter {
 }
 
 extension List: NotificationEmitter {
+    public func observe(on queue: DispatchQueue?, _ block: @escaping (RealmCollectionChange<List<Element>>) -> Void) -> NotificationToken {
+        return self.observe(keyPaths: nil, on: queue, block)
+    }
+    
   public func toAnyCollection() -> AnyRealmCollection<Element> {
     return AnyRealmCollection<Element>(self)
   }
@@ -53,6 +55,10 @@ extension List: NotificationEmitter {
 }
 
 extension AnyRealmCollection: NotificationEmitter {
+    public func observe(on queue: DispatchQueue?, _ block: @escaping (RealmCollectionChange<AnyRealmCollection<Element>>) -> Void) -> NotificationToken {
+        return self.observe(keyPaths: nil, on: queue, block)
+    }
+    
   public func toAnyCollection() -> AnyRealmCollection<Element> {
     return AnyRealmCollection<ElementType>(self)
   }
@@ -64,6 +70,10 @@ extension AnyRealmCollection: NotificationEmitter {
 }
 
 extension Results: NotificationEmitter {
+    public func observe(on queue: DispatchQueue?, _ block: @escaping (RealmCollectionChange<Results<Element>>) -> Void) -> NotificationToken {
+        return self.observe(keyPaths: nil, on: queue, block)
+    }
+    
   public func toAnyCollection() -> AnyRealmCollection<Element> {
     return AnyRealmCollection<ElementType>(self)
   }
@@ -75,6 +85,10 @@ extension Results: NotificationEmitter {
 }
 
 extension LinkingObjects: NotificationEmitter {
+    public func observe(on queue: DispatchQueue?, _ block: @escaping (RealmCollectionChange<LinkingObjects<Element>>) -> Void) -> NotificationToken {
+        return self.observe(keyPaths: nil, on: queue, block)
+    }
+    
   public func toAnyCollection() -> AnyRealmCollection<Element> {
     return AnyRealmCollection<ElementType>(self)
   }
@@ -113,20 +127,18 @@ public extension ObservableType where Element: NotificationEmitter {
 
    - parameter from: A Realm collection of type `Element`: either `Results`, `List`, `LinkingObjects` or `AnyRealmCollection`.
    - parameter synchronousStart: whether the resulting `Observable` should emit its first element synchronously (e.g. better for UI bindings)
-   - parameter keyPaths: Only properties contained in the key paths array will trigger
-                              the block when they are modified. See description above for more detail on linked properties.
    - parameter queue: The serial dispatch queue to receive notification on. If `nil`, notifications are delivered to the current thread.
 
    - returns: `Observable<Element>`, e.g. when called on `Results<Model>` it will return `Observable<Results<Model>>`, on a `List<User>` it will return `Observable<List<User>>`, etc.
    */
-  static func collection(from collection: Element, synchronousStart: Bool = true, keyPaths: [String]? = nil, on queue: DispatchQueue? = nil)
+  static func collection(from collection: Element, synchronousStart: Bool = true, on queue: DispatchQueue? = nil)
     -> Observable<Element> {
     return Observable.create { observer in
       if synchronousStart {
         observer.onNext(collection)
       }
 
-      let token = collection.observe(keyPaths: keyPaths, on: queue) { changeset in
+      let token = collection.observe(on: queue) { changeset in
 
         let value: Element
 
